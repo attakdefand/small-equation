@@ -1,0 +1,113 @@
+name: Branch Protection
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  # Ensure PRs to main come from develop or hotfix branches
+  pr-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR source branch
+        if: github.base_ref == 'main'
+        run: |
+          if [[ "${{ github.head_ref }}" != "develop" && "${{ github.head_ref }}" != hotfix/* ]]; then
+            echo "ERROR: PRs to main must come from develop or hotfix/* branches"
+            exit 1
+          fi
+
+  # Ensure PRs to develop come from feature branches
+  pr-develop-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR source branch for develop
+        if: github.base_ref == 'develop'
+        run: |
+          if [[ "${{ github.head_ref }}" != feature/* ]]; then
+            echo "ERROR: PRs to develop must come from feature/* branches"
+            exit 1
+          fi
+
+  # Require approval for main branch merges
+  require-approval:
+    runs-on: ubuntu-latest
+    if: github.base_ref == 'main'
+    steps:
+      - name: Check for approvals
+        run: |
+          # This would typically be handled by GitHub branch protection settings
+          echo "Main branch requires approval for merges"
+
+  # Prevent direct pushes to main and develop
+  prevent-direct-push:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Fail on direct push to protected branches
+        run: |
+          echo "Direct pushes to protected branches are not allowed. Please use pull requests."
+          exit 1
+
+  # Enforce conventional commit messages
+  commit-message-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check commit messages
+        if: github.event_name == 'pull_request'
+        run: |
+          # Get commits in this PR
+          commits=$(git log --format="%s" ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+          
+          # Check each commit message follows conventional commits
+          echo "$commits" | while read -r commit; do
+            if [[ -n "$commit" ]] && ! [[ "$commit" =~ ^(feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert)(\([^)]+\))?:\ .+ ]]; then
+              echo "Commit message '$commit' does not follow conventional commits format"
+              echo "Format should be: type(scope): description"
+              exit 1
+            fi
+          done
+
+  # Check for large files
+  large-files-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for large files
+        run: |
+          # Check for files larger than 1MB
+          large_files=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | xargs -I {} du -k "{}" 2>/dev/null | awk '$1 > 1024 { print $2 " (" $1 "KB)" }' || true)
+          if [[ -n "$large_files" ]]; then
+            echo "Large files detected (>1MB):"
+            echo "$large_files"
+            echo "Please consider using Git LFS for large files"
+            exit 1
+          fi
+
+  # Check for sensitive data
+  sensitive-data-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for sensitive data
+        run: |
+          # Check for common sensitive data patterns
+          if git diff ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -i -E "(password|secret|key|token)[[:space:]]*[:=]"; then
+            echo "Potential sensitive data found in code changes"
+            exit 1
+          fi
