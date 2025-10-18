@@ -3,7 +3,10 @@
 use trillion_dollar_equation::{
     EuropeanCallOption, 
     EuropeanPutOption,
-    models::{ImpliedVolatilitySolver, EuropeanOption, AmericanOption}
+    models::{
+        ImpliedVolatilitySolver, EuropeanOption, AmericanOption,
+        EuropeanMonteCarlo, MonteCarloConfig
+    }
 };
 
 #[test]
@@ -74,4 +77,25 @@ fn test_library_usage() {
     
     let american_price = american_option.price(None).expect("Failed to price American option");
     assert!(american_price > 0.0);
+    
+    // Test Monte Carlo simulation
+    let mc_european = EuropeanMonteCarlo::new(
+        100.0,  // Underlying price
+        100.0,  // Strike price
+        1.0,    // Time to expiry (1 year)
+        0.05,   // Risk-free rate (5%)
+        0.2,    // Volatility (20%)
+        true,   // Call option
+        0.0,    // No dividends
+    ).expect("Failed to create Monte Carlo European option");
+    
+    let config = MonteCarloConfig {
+        num_paths: 10_000,  // Smaller number for faster testing
+        num_steps: 252,
+        seed: Some(42),
+        num_threads: 1,
+    };
+    
+    let mc_price = mc_european.price(Some(config)).expect("Failed to price with Monte Carlo");
+    assert!(mc_price > 0.0);
 }

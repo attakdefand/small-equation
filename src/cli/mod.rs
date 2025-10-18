@@ -5,7 +5,8 @@ use crate::models::{
     BlacksModel, MertonJumpDiffusion, 
     GarmanKohlhagen, Greeks,
     ImpliedVolatilitySolver,
-    AmericanOption, EuropeanOption, BinomialGreeks, BinomialConfig
+    AmericanOption, EuropeanOption, BinomialGreeks, BinomialConfig,
+    EuropeanMonteCarlo, AsianMonteCarlo, BarrierMonteCarlo, VarianceReducedMonteCarlo, MonteCarloConfig
 };
 
 /// Run the CLI application
@@ -21,6 +22,7 @@ pub fn run() {
     example_greeks();
     example_implied_volatility();
     example_binomial_model();
+    example_monte_carlo();
 }
 
 fn example_european_options() {
@@ -242,4 +244,97 @@ fn example_binomial_model() {
     println!("  Gamma: {:.4}", gamma);
     println!("  Theta: {:.4}", theta);
     println!("  Vega: {:.4}", vega);
+}
+
+fn example_monte_carlo() {
+    println!("\n⚪ Monte Carlo Simulation");
+    println!("-------------------------");
+    
+    // Example with European call option
+    let european_mc = EuropeanMonteCarlo::new(
+        100.0,  // Underlying price
+        100.0,  // Strike price
+        1.0,    // Time to expiry (1 year)
+        0.05,   // Risk-free rate (5%)
+        0.2,    // Volatility (20%)
+        true,   // Call option
+        0.0,    // No dividends
+    ).expect("Failed to create European Monte Carlo simulator");
+    
+    // Configure Monte Carlo simulation with fewer paths for faster execution
+    let config = MonteCarloConfig {
+        num_paths: 10_000,  // Reduced for faster execution
+        num_steps: 252,     // Trading days in a year
+        seed: Some(42),     // Fixed seed for reproducibility
+    };
+    
+    let mc_price = european_mc.price(Some(config)).expect("Failed to price with Monte Carlo");
+    
+    // Compare with Black-Scholes
+    let bs_call = EuropeanCallOption::new(
+        100.0,  // Underlying price
+        100.0,  // Strike price
+        1.0,    // Time to expiry (1 year)
+        0.05,   // Risk-free rate (5%)
+        0.2,    // Volatility (20%)
+    );
+    
+    let bs_price = bs_call.price();
+    
+    println!("European Call Option Pricing:");
+    println!("  Monte Carlo: ${:.4}", mc_price);
+    println!("  Black-Scholes: ${:.4}", bs_price);
+    println!("  Difference: ${:.4}", (mc_price - bs_price).abs());
+    
+    // Example with Asian option
+    let asian_mc = AsianMonteCarlo::new(
+        100.0,  // Underlying price
+        100.0,  // Strike price
+        1.0,    // Time to expiry (1 year)
+        0.05,   // Risk-free rate (5%)
+        0.2,    // Volatility (20%)
+        true,   // Call option
+        0.0,    // No dividends
+    ).expect("Failed to create Asian Monte Carlo simulator");
+    
+    let asian_price = asian_mc.price(Some(config)).expect("Failed to price Asian option");
+    
+    println!("\nAsian Call Option Pricing (Arithmetic Average):");
+    println!("  Monte Carlo: ${:.4}", asian_price);
+    
+    // Example with Barrier option (Knock-out call)
+    let barrier_mc = BarrierMonteCarlo::new(
+        100.0,      // Underlying price
+        100.0,      // Strike price
+        120.0,      // Barrier price (knock-out at 120)
+        1.0,        // Time to expiry (1 year)
+        0.05,       // Risk-free rate (5%)
+        0.2,        // Volatility (20%)
+        true,       // Call option
+        false,      // Knock-out (not knock-in)
+        0.0,        // No dividends
+    ).expect("Failed to create Barrier Monte Carlo simulator");
+    
+    let barrier_price = barrier_mc.price(Some(config)).expect("Failed to price Barrier option");
+    
+    println!("\nBarrier Call Option Pricing (Knock-out at 120):");
+    println!("  Monte Carlo: ${:.4}", barrier_price);
+    
+    // Example with Variance Reduced Monte Carlo
+    let variance_reduced_mc = VarianceReducedMonteCarlo::new(
+        100.0,  // Underlying price
+        100.0,  // Strike price
+        1.0,    // Time to expiry (1 year)
+        0.05,   // Risk-free rate (5%)
+        0.2,    // Volatility (20%)
+        true,   // Call option
+        0.0,    // No dividends
+    ).expect("Failed to create Variance Reduced Monte Carlo simulator");
+    
+    let vr_mc_price = variance_reduced_mc.price(Some(config)).expect("Failed to price with Variance Reduced Monte Carlo");
+    
+    println!("\nVariance Reduced Monte Carlo:");
+    println!("  Standard MC: ${:.4}", mc_price);
+    println!("  Variance Reduced MC: ${:.4}", vr_mc_price);
+    println!("  Difference: ${:.4}", (vr_mc_price - mc_price).abs());
 }

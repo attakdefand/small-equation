@@ -7,7 +7,8 @@ use trillion_dollar_equation::models::{
     garman_kohlhagen::GarmanKohlhagen,
     greeks::Greeks,
     implied_volatility::ImpliedVolatilitySolver,
-    binomial_model::{AmericanOption, EuropeanOption, BinomialConfig}
+    binomial_model::{AmericanOption, EuropeanOption, BinomialConfig},
+    monte_carlo::{EuropeanMonteCarlo, MonteCarloConfig}
 };
 
 #[test]
@@ -181,4 +182,45 @@ fn test_binomial_model_integration() {
     
     // American put should be worth at least as much as European put due to early exercise feature
     assert!(american_price >= european_price);
+}
+
+#[test]
+fn test_monte_carlo_integration() {
+    // Test integration of Monte Carlo simulation with other components
+    
+    // Create a European option using the Monte Carlo model
+    let mc_european = EuropeanMonteCarlo::new(
+        100.0,  // Underlying price
+        100.0,  // Strike price
+        1.0,    // Time to expiry (1 year)
+        0.05,   // Risk-free rate (5%)
+        0.2,    // Volatility (20%)
+        true,   // Call option
+        0.0,    // No dividends
+    ).expect("Failed to create Monte Carlo European option");
+    
+    // Price using Monte Carlo simulation
+    let config = MonteCarloConfig {
+        num_paths: 10_000,  // Reduced for faster testing
+        num_steps: 252,     // Trading days in a year
+        seed: Some(42),     // Fixed seed for reproducibility
+    };
+    
+    let mc_price = mc_european.price(Some(config)).expect("Failed to price with Monte Carlo");
+    
+    // Create equivalent option using the original EuropeanCallOption
+    let original_european = EuropeanCallOption::new(
+        100.0,  // Underlying price
+        100.0,  // Strike price
+        1.0,    // Time to expiry (1 year)
+        0.05,   // Risk-free rate (5%)
+        0.2,    // Volatility (20%)
+    );
+    
+    // Price using original Black-Scholes model
+    let bs_price = original_european.price();
+    
+    // The prices should be reasonably close (Monte Carlo converges to Black-Scholes)
+    let difference = (mc_price - bs_price).abs();
+    assert!(difference / bs_price < 0.1); // Within 10%
 }
