@@ -1,213 +1,236 @@
 # Trillion Dollar Equation
 
-A comprehensive Rust implementation of the Black-Scholes model and its various extensions for financial option pricing and risk management.
-
-## Overview
-
-This project implements multiple variants of the Black-Scholes model, which is a cornerstone in quantitative finance used for pricing options and other derivatives. The "trillion-dollar equation" refers to the massive financial markets that rely on these mathematical models for pricing and risk management.
+A comprehensive Rust library for financial options pricing with implementations of the Black-Scholes model and its variants, along with advanced numerical methods for option valuation.
 
 ## Features
 
-### Main Components
+### Core Models
+- **European Options**: Standard Black-Scholes model
+- **Futures Options**: Black's model
+- **Jump Diffusion**: Merton's model with jumps
+- **FX Options**: Garman-Kohlhagen model
 
-1. **European Options Pricing**
-   - European Call Option pricing using the classic Black-Scholes formula
-   - European Put Option pricing using the classic Black-Scholes formula
+### Advanced Pricing Methods
+- **Binomial Tree Model**: For American options with early exercise features
+- **Monte Carlo Simulation**: For path-dependent options (Asian, Barrier, etc.)
+- **Implied Volatility Solver**: Newton-Raphson and bisection methods
 
-2. **Black's Model**
-   - Pricing model for options on futures contracts
-   - Commonly used in energy and commodity markets
+### Risk Management
+- **Greeks Calculation**: Delta, Gamma, Vega, Theta, Rho
+- **Advanced Greeks**: Vanna, Charm, Vomma (planned)
 
-3. **Merton Jump Diffusion Model**
-   - Extension of Black-Scholes that accounts for market shocks and sudden price movements
-   - Useful for modeling earnings announcements, crashes, and other discontinuous events
-
-4. **Garman-Kohlhagen Model**
-   - Extension for pricing foreign exchange options
-   - Accounts for domestic and foreign interest rates
-
-5. **Greeks Calculator**
-   - Risk sensitivity measures for options positions
-   - Includes Delta, Gamma, Vega, Theta, and Rho calculations
-
-6. **Implied Volatility Solver**
-   - Calculate implied volatility from market option prices
-   - Uses Newton-Raphson and Bisection methods for numerical solving
-   - Essential for traders to infer market sentiment from option prices
-
-7. **Binomial Option Pricing Model**
-   - Multi-step binomial trees for American and European option pricing
-   - Early exercise capability for American options
-   - Dividend adjustments support
-
-### Mathematical Models
-
-| Model | Formula | Use Case |
-|-------|---------|----------|
-| 🟢 **European Call Option** | C = S·N(d₁) - K·e^(-rT)·N(d₂) | Right to buy stock at strike price, exercisable only at expiry |
-| 🔵 **European Put Option** | P = K·e^(-rT)·N(-d₂) - S·N(-d₁) | Right to sell stock at strike price, exercisable only at expiry |
-| 🟡 **Black's Model** | Modified Black-Scholes for futures | Used in energy/commodity markets for futures pricing |
-| 🟠 **Merton Jump Diffusion** | Black-Scholes with jump terms | Accounts for market shocks and sudden movements |
-| 🔴 **Garman-Kohlhagen** | FX-adjusted Black-Scholes | Used in forex options and global currency trading |
-| 🟣 **Implied Volatility Solver** | Reverse use: Solve σ from market price | Used by traders to infer market sentiment from option prices |
-| 🟤 **Binomial Model** | Multi-step tree pricing | American options with early exercise, dividend-paying stocks |
-| ⚫ **Greeks** | Derivatives of BSM | Risk hedging and position management |
+### Data Management
+- **Database Integration**: SQLite and PostgreSQL support for storing calculations and market data
+- **Data Migration Framework**: Version-controlled schema management
+- **ORM Support**: Type-safe database interactions
 
 ## Project Structure
 
 ```
-src/
-├── main.rs          # Entry point for the CLI application
-├── lib.rs           # Library exports
-├── models/
-│   ├── mod.rs              # Module exports
-│   ├── european_options.rs # European Call/Put options
-│   ├── black_model.rs      # Black's model for futures options
-│   ├── merton_jump_diffusion.rs # Jump diffusion model
-│   ├── garman_kohlhagen.rs # FX options model
-│   ├── greeks.rs           # Risk sensitivity calculations
-│   ├── implied_volatility.rs # Implied volatility solver
-│   └── binomial_model.rs   # Binomial option pricing model
-├── utils/
-│   ├── mod.rs              # Utility functions
-│   └── math.rs             # Mathematical functions
-└── cli/
-    └── mod.rs              # Command-line interface
-
-tests/
-├── binomial_model_tests.rs # Tests for binomial model
-├── implied_volatility_tests.rs # Tests for implied volatility solver
-├── integration_tests.rs        # Integration tests for complete workflow
-└── library_usage.rs            # Tests for library usage as dependency
+trillion-dollar-equation/
+├── src/                 # Core Rust library
+│   ├── models/          # Pricing models implementations
+│   ├── utils/           # Utility functions
+│   ├── cli/             # Command-line interface
+│   ├── lib.rs           # Library entry point
+│   └── main.rs          # CLI application
+├── tests/               # Comprehensive test suite
+├── examples/            # Example applications
+├── web/                 # Web frontend (Next.js)
+├── api/                 # Web API (Actix-web)
+├── migrations/          # Database migration scripts
+├── NEXT-IMPLEMENTATION.md    # Implementation roadmap
+├── SYSTEM-DESIGN-FOR-EQUATION.MD  # System architecture
+├── DATA-MODELING.MD     # Data modeling best practices
+├── DATA-MODELING-ALIGNMENT.MD  # Alignment with data modeling principles
+├── DATABASE-SETUP.MD    # Database setup and usage guide
+├── RUNNING-THE-SYSTEM.md  # Instructions for running the complete system
+├── WEB-INTERFACE-ALIGNMENT.MD  # Web interface alignment documentation
+└── README.md            # This file
 ```
 
 ## Installation
 
-1. Install Rust using [rustup](https://rustup.rs/):
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   ```
+### Prerequisites
+- Rust toolchain (latest stable version)
+- Cargo package manager
 
-2. Clone this repository:
-   ```bash
-   git clone https://github.com/your-username/trillion-dollar-equation.git
-   cd trillion-dollar-equation
-   ```
+### Building the Library
 
-3. Build the project:
-   ```bash
-   cargo build
-   ```
-
-## Usage
-
-### As a Library
-
-Add this to your `Cargo.toml`:
-```toml
-[dependencies]
-trillion-dollar-equation = { path = "path/to/trillion-dollar-equation" }
-```
-
-Then use it in your code:
-```rust
-use trillion_dollar_equation::{
-    EuropeanCallOption, 
-    models::{ImpliedVolatilitySolver, EuropeanOption, AmericanOption}
-};
-
-fn main() {
-    // Traditional Black-Scholes pricing
-    let call_option = EuropeanCallOption::new(
-        100.0,  // Underlying price
-        100.0,  // Strike price
-        1.0,    // Time to expiry (1 year)
-        0.05,   // Risk-free rate (5%)
-        0.2,    // Volatility (20%)
-    );
-    
-    let market_price = call_option.price();
-    
-    // Implied volatility calculation
-    let solver = ImpliedVolatilitySolver::new();
-    match solver.calculate_call_iv(&call_option, market_price) {
-        Ok(iv) => println!("Implied Volatility: {:.2}%", iv * 100.0),
-        Err(e) => println!("Failed to calculate implied volatility: {:?}", e),
-    }
-    
-    // Binomial model pricing for American options
-    let american_put = AmericanOption::new(
-        100.0,  // Underlying price
-        105.0,  // Strike price (in-the-money)
-        1.0,    // Time to expiry (1 year)
-        0.05,   // Risk-free rate (5%)
-        0.2,    // Volatility (20%)
-        false,  // Put option
-        0.0,    // No dividends
-    ).expect("Failed to create American put option");
-    
-    let config = trillion_dollar_equation::models::BinomialConfig { num_steps: 500 };
-    match american_put.price(Some(config)) {
-        Ok(price) => println!("American Put Option Price: ${:.4}", price),
-        Err(e) => println!("Failed to price American option: {:?}", e),
-    }
-}
-```
-
-### As a CLI Application
-
-Run the example calculations:
 ```bash
-cargo run
+cargo build
 ```
 
-## Testing
+### Running Tests
 
-Run all tests:
 ```bash
 cargo test
 ```
 
-Run specific test suite:
+### Running the CLI
+
 ```bash
-# Run only binomial model tests
-cargo test binomial_model
-
-# Run implied volatility tests
-cargo test implied_volatility
-
-# Run integration tests
-cargo test integration
-
-# Run library usage tests
-cargo test library_usage
+cargo run
 ```
 
-## Real-World Applications
+## Database Support
 
-| Variant | Use Case |
-|---------|----------|
-| **European Call/Put** | Pricing stock options like $AAPL or $TSLA |
-| **Black's Model** | Oil futures options, energy derivatives |
-| **Merton Jump Diffusion** | Options during earnings season or war/political risk events |
-| **Garman-Kohlhagen** | Options on EUR/USD, JPY/USD in banks or hedge funds |
-| **Implied Volatility** | Risk teams estimating how "expensive" options are |
-| **Binomial Model** | American options, employee stock options, dividend-paying stocks |
-| **Greeks (Δ, Γ, ν, ρ, Θ)** | Algorithmic hedging, delta-neutral portfolios |
+The project includes comprehensive database support for storing option calculations and market data:
 
-## Dependencies
+### Supported Databases
+- **SQLite**: Lightweight embedded database for development and single-user applications
+- **PostgreSQL**: Production-ready database for multi-user applications and complex analytics
 
-- `num` - Mathematical functions and constants
-- `statrs` - Statistical distributions and functions
-- `serde` - Serialization support (optional)
+### Schema
+The database schema includes:
+- `option_calculations`: Stores option pricing results with all parameters and Greeks
+- `market_data`: Stores historical market data including prices and implied volatilities
+- `user_configurations`: Stores user preferences and settings
+
+### Setup
+See [DATABASE-SETUP.MD](DATABASE-SETUP.MD) for detailed instructions on setting up and using the database functionality.
+
+### Migrations
+Database schema changes are managed through version-controlled migration scripts in the `migrations/` directory.
+
+## Web Interface
+
+The project includes a professional web-based interface built with Next.js:
+
+### Features
+- Interactive option pricing calculator
+- Support for multiple pricing models
+- Real-time payoff diagrams
+- Comprehensive Greeks calculations
+- Responsive design for all devices
+
+### Running the Web Interface
+
+1. Navigate to the web directory:
+   ```bash
+   cd web
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## API
+
+The project includes a RESTful API built with Actix-web that exposes the Rust financial models:
+
+### Running the API
+
+1. Navigate to the API directory:
+   ```bash
+   cd api
+   ```
+
+2. Run the server:
+   ```bash
+   cargo run
+   ```
+
+3. The API will be available at [http://localhost:8080](http://localhost:8080)
+
+### API Endpoints
+
+- `GET /health` - Health check endpoint
+- `POST /api/option-price` - Calculate option price using specified model
+
+Example request:
+```json
+{
+  "underlying_price": 100.0,
+  "strike_price": 100.0,
+  "time_to_expiry": 1.0,
+  "risk_free_rate": 0.05,
+  "volatility": 0.2,
+  "dividend_yield": 0.0,
+  "is_call": true,
+  "option_type": "european",
+  "model": "black-scholes"
+}
+```
+
+## Models Implementation Status
+
+✅ **Completed Features**:
+- European Options (Black-Scholes model)
+- Futures Options (Black's model)
+- Jump Diffusion Model (Merton)
+- FX Options (Garman-Kohlhagen)
+- Greeks Calculation
+- Implied Volatility Solver
+- Binomial Option Pricing Model
+- Monte Carlo Simulation
+- Database Integration
+
+📅 **Planned Features**:
+- Advanced Greeks Calculations
+- Exotic Options Models
+- Stochastic Volatility Models
+- Web API Interface
+- Visualization Tools
+
+## Data Modeling Best Practices
+
+This project follows industry best practices for financial modeling as outlined in `DATA-MODELING.MD`:
+
+- **Market IV Usage**: Implied volatility solver calculates market-implied volatility
+- **Dividend Adjustments**: All models properly handle dividend yields
+- **American Features**: Binomial model supports early exercise
+- **FX Carry**: Garman-Kohlhagen model handles domestic/foreign interest rates
+- **Futures Modeling**: Black's model for futures options
+
+See `DATA-MODELING-ALIGNMENT.MD` for detailed information on how these principles are implemented.
+
+## Testing
+
+The project includes a comprehensive test suite with:
+- Unit tests for each mathematical formula
+- Integration tests for end-to-end workflows
+- Performance benchmarks
+- Edge case validation
+
+Run all tests with:
+```bash
+cargo test
+```
+
+## Examples
+
+The project includes example applications demonstrating various features:
+
+### Database Example
+Shows how to use the database functionality:
+```bash
+cargo run --example database_example
+```
+
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a pull request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## References
+## Acknowledgments
 
-1. Black, F., & Scholes, M. (1973). "The Pricing of Options and Corporate Liabilities". Journal of Political Economy.
-2. Merton, R. (1976). "Option Pricing when Underlying Stock Returns are Discontinuous". Journal of Financial Economics.
-3. Garman, M. B., & Kohlhagen, S. W. (1983). "Foreign Currency Option Values". Journal of International Money and Finance.
-4. Cox, J. C., Ross, S. A., & Rubinstein, M. (1979). "Option Pricing: A Simplified Approach". Journal of Financial Economics.# small-equation
+- Based on the Black-Scholes equation and its various extensions
+- Inspired by financial engineering research and practice

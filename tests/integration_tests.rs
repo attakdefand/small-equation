@@ -1,15 +1,139 @@
-//! Integration tests for the complete workflow of the Trillion Dollar Equation project
+//! Integration tests for the Trillion Dollar Equation project
+//!
+//! These tests verify the integration between different components
+//! including the financial models and database functionality.
 
-use trillion_dollar_equation::models::{
-    european_options::{EuropeanCallOption, EuropeanPutOption},
-    black_model::BlacksModel,
-    merton_jump_diffusion::MertonJumpDiffusion,
-    garman_kohlhagen::GarmanKohlhagen,
-    greeks::Greeks,
-    implied_volatility::ImpliedVolatilitySolver,
-    binomial_model::{AmericanOption, EuropeanOption, BinomialConfig},
-    monte_carlo::{EuropeanMonteCarlo, MonteCarloConfig}
+use trillion_dollar_equation::models::*;
+use trillion_dollar_equation::{
+    EuropeanCallOption, EuropeanPutOption, 
+    BlacksModel, MertonJumpDiffusion, 
+    GarmanKohlhagen, Greeks,
+    ImpliedVolatilitySolver,
+    AmericanOption, EuropeanOption, BinomialGreeks, BinomialConfig,
+    EuropeanMonteCarlo, AsianMonteCarlo, BarrierMonteCarlo, VarianceReducedMonteCarlo, MonteCarloConfig
 };
+use chrono::Utc;
+
+#[test]
+fn test_financial_model_with_database_integration() {
+    // Create a European call option
+    let call_option = EuropeanCallOption::new(
+        100.0,  // Underlying price
+        100.0,  // Strike price
+        1.0,    // Time to expiry (1 year)
+        0.05,   // Risk-free rate (5%)
+        0.2,    // Volatility (20%)
+    );
+    
+    // Calculate price and Greeks
+    let price = call_option.price();
+    let greeks = Greeks::new(100.0, 100.0, 1.0, 0.05, 0.2);
+    
+    // Create an OptionCalculation record
+    let calculation = OptionCalculation {
+        id: 0, // Will be set by database
+        underlying_price: 100.0,
+        strike_price: 100.0,
+        time_to_expiry: 1.0,
+        risk_free_rate: 0.05,
+        volatility: 0.2,
+        dividend_yield: 0.0,
+        is_call: true,
+        option_price: price,
+        delta: greeks.delta_call(),
+        gamma: greeks.gamma(),
+        theta: greeks.theta_call(),
+        vega: greeks.vega(),
+        rho: greeks.rho_call(),
+        timestamp: Utc::now().to_rfc3339(),
+    };
+    
+    // Verify the calculation data
+    assert_eq!(calculation.underlying_price, 100.0);
+    assert_eq!(calculation.strike_price, 100.0);
+    assert_eq!(calculation.time_to_expiry, 1.0);
+    assert_eq!(calculation.risk_free_rate, 0.05);
+    assert_eq!(calculation.volatility, 0.2);
+    assert_eq!(calculation.dividend_yield, 0.0);
+    assert_eq!(calculation.is_call, true);
+    assert!(calculation.option_price > 0.0);
+    assert!(calculation.delta > 0.0 && calculation.delta < 1.0);
+    
+    // Create market data
+    let market_data = MarketData {
+        id: 0, // Will be set by database
+        symbol: "TEST".to_string(),
+        datetime: Utc::now().to_rfc3339(),
+        open: 100.0,
+        high: 105.0,
+        low: 95.0,
+        close: 102.0,
+        volume: 100000.0,
+        implied_volatility: Some(0.25),
+    };
+    
+    // Verify the market data
+    assert_eq!(market_data.symbol, "TEST");
+    assert_eq!(market_data.open, 100.0);
+    assert_eq!(market_data.high, 105.0);
+    assert_eq!(market_data.low, 95.0);
+    assert_eq!(market_data.close, 102.0);
+    assert_eq!(market_data.volume, 100000.0);
+    assert_eq!(market_data.implied_volatility, Some(0.25));
+}
+
+#[test]
+fn test_database_config_creation() {
+    // Test default configuration
+    let config = DatabaseConfig::default();
+    assert_eq!(config.db_type, "sqlite");
+    assert_eq!(config.connection_string, "trillion_dollar_equation.db");
+    assert_eq!(config.max_connections, 10);
+    
+    // Test custom configuration
+    let custom_config = DatabaseConfig {
+        db_type: "postgres".to_string(),
+        connection_string: "postgresql://user:pass@localhost/db".to_string(),
+        max_connections: 20,
+    };
+    
+    assert_eq!(custom_config.db_type, "postgres");
+    assert_eq!(custom_config.connection_string, "postgresql://user:pass@localhost/db");
+    assert_eq!(custom_config.max_connections, 20);
+}
+
+#[test]
+fn test_database_factory_creation() {
+    // Test SQLite database creation
+    let sqlite_config = DatabaseConfig {
+        db_type: "sqlite".to_string(),
+        connection_string: "test.db".to_string(),
+        max_connections: 5,
+    };
+    
+    let sqlite_db = DatabaseFactory::create_database(&sqlite_config);
+    assert!(sqlite_db.is_ok());
+    
+    // Test PostgreSQL database creation
+    let postgres_config = DatabaseConfig {
+        db_type: "postgres".to_string(),
+        connection_string: "postgresql://user:pass@localhost/db".to_string(),
+        max_connections: 5,
+    };
+    
+    let postgres_db = DatabaseFactory::create_database(&postgres_config);
+    assert!(postgres_db.is_ok());
+    
+    // Test unsupported database type
+    let unsupported_config = DatabaseConfig {
+        db_type: "mysql".to_string(),
+        connection_string: "mysql://user:pass@localhost/db".to_string(),
+        max_connections: 5,
+    };
+    
+    let unsupported_db = DatabaseFactory::create_database(&unsupported_config);
+    assert!(unsupported_db.is_err());
+}
 
 #[test]
 fn test_complete_workflow_european_options() {

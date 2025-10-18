@@ -12,3 +12,6 @@ pub use models::black_model::BlacksModel;
 pub use models::merton_jump_diffusion::MertonJumpDiffusion;
 pub use models::garman_kohlhagen::GarmanKohlhagen;
 pub use models::greeks::Greeks;
+pub use models::implied_volatility::ImpliedVolatilitySolver;
+pub use models::binomial_model::{AmericanOption, EuropeanOption, BinomialGreeks, BinomialConfig};
+pub use models::monte_carlo::{EuropeanMonteCarlo, AsianMonteCarlo, BarrierMonteCarlo, VarianceReducedMonteCarlo, MonteCarloConfig};

@@ -6,7 +6,8 @@ use crate::models::{
     GarmanKohlhagen, Greeks,
     ImpliedVolatilitySolver,
     AmericanOption, EuropeanOption, BinomialGreeks, BinomialConfig,
-    EuropeanMonteCarlo, AsianMonteCarlo, BarrierMonteCarlo, VarianceReducedMonteCarlo, MonteCarloConfig
+    EuropeanMonteCarlo, AsianMonteCarlo, BarrierMonteCarlo, VarianceReducedMonteCarlo, MonteCarloConfig,
+    DatabaseConfig, DatabaseFactory, OptionCalculation, MarketData
 };
 
 /// Run the CLI application
@@ -23,6 +24,7 @@ pub fn run() {
     example_implied_volatility();
     example_binomial_model();
     example_monte_carlo();
+    example_database_integration();
 }
 
 fn example_european_options() {
@@ -337,4 +339,71 @@ fn example_monte_carlo() {
     println!("  Standard MC: ${:.4}", mc_price);
     println!("  Variance Reduced MC: ${:.4}", vr_mc_price);
     println!("  Difference: ${:.4}", (vr_mc_price - mc_price).abs());
+}
+
+fn example_database_integration() {
+    println!("\n💾 Database Integration Example");
+    println!("------------------------------");
+    
+    // Example database configuration
+    let config = DatabaseConfig::default();
+    println!("Using database: {} at {}", config.db_type, config.connection_string);
+    
+    // Example option calculation to store
+    let call_option = EuropeanCallOption::new(
+        100.0,  // Underlying price
+        100.0,  // Strike price
+        1.0,    // Time to expiry (1 year)
+        0.05,   // Risk-free rate (5%)
+        0.2,    // Volatility (20%)
+    );
+    
+    let price = call_option.price();
+    let greeks = Greeks::new(100.0, 100.0, 1.0, 0.05, 0.2);
+    
+    // Create an OptionCalculation record
+    let calculation = OptionCalculation {
+        id: 0, // Will be set by database
+        underlying_price: 100.0,
+        strike_price: 100.0,
+        time_to_expiry: 1.0,
+        risk_free_rate: 0.05,
+        volatility: 0.2,
+        dividend_yield: 0.0,
+        is_call: true,
+        option_price: price,
+        delta: greeks.delta_call(),
+        gamma: greeks.gamma(),
+        theta: greeks.theta_call(),
+        vega: greeks.vega(),
+        rho: greeks.rho_call(),
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    };
+    
+    println!("Prepared to store calculation:");
+    println!("  Option Price: ${:.4}", calculation.option_price);
+    println!("  Delta: {:.4}", calculation.delta);
+    println!("  Gamma: {:.4}", calculation.gamma);
+    println!("  Vega: {:.4}", calculation.vega);
+    
+    // Example market data to store
+    let market_data = MarketData {
+        id: 0, // Will be set by database
+        symbol: "AAPL".to_string(),
+        datetime: chrono::Utc::now().to_rfc3339(),
+        open: 150.0,
+        high: 155.0,
+        low: 149.0,
+        close: 153.0,
+        volume: 1000000.0,
+        implied_volatility: Some(0.25),
+    };
+    
+    println!("\nPrepared to store market data:");
+    println!("  Symbol: {}", market_data.symbol);
+    println!("  Close Price: ${:.2}", market_data.close);
+    println!("  Implied Volatility: {:.2}%", market_data.implied_volatility.unwrap_or(0.0) * 100.0);
+    
+    println!("\n📝 Note: Database functionality is implemented but requires actual database setup to run.");
+    println!("   See the database module documentation for setup instructions.");
 }

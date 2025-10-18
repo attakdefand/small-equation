@@ -420,12 +420,13 @@ impl VarianceReducedMonteCarlo {
         let mut payoffs = vec![0.0; cfg.num_paths];
         
         for i in 0..cfg.num_paths / 2 {
-            let random_shock = normal.sample(&mut rng);
+            let _random_shock = normal.sample(&mut rng);
             
             // Original path
             let mut price1 = self.underlying_price;
             for _ in 0..cfg.num_steps {
-                price1 *= (drift + vol_sqrt_dt * random_shock).exp();
+                let step_shock = normal.sample(&mut rng);
+                price1 *= (drift + vol_sqrt_dt * step_shock).exp();
             }
             payoffs[2 * i] = if self.is_call {
                 (price1 - self.strike_price).max(0.0)
@@ -433,10 +434,11 @@ impl VarianceReducedMonteCarlo {
                 (self.strike_price - price1).max(0.0)
             };
             
-            // Antithetic path (using -random_shock)
+            // Antithetic path (using -random_shock for each step)
             let mut price2 = self.underlying_price;
             for _ in 0..cfg.num_steps {
-                price2 *= (drift + vol_sqrt_dt * (-random_shock)).exp();
+                let step_shock = normal.sample(&mut rng);
+                price2 *= (drift + vol_sqrt_dt * (-step_shock)).exp();
             }
             payoffs[2 * i + 1] = if self.is_call {
                 (price2 - self.strike_price).max(0.0)
@@ -447,9 +449,9 @@ impl VarianceReducedMonteCarlo {
         
         // Handle odd number of paths
         if cfg.num_paths % 2 == 1 {
-            let random_shock = normal.sample(&mut rng);
             let mut price = self.underlying_price;
             for _ in 0..cfg.num_steps {
+                let random_shock = normal.sample(&mut rng);
                 price *= (drift + vol_sqrt_dt * random_shock).exp();
             }
             payoffs[cfg.num_paths - 1] = if self.is_call {

@@ -1,0 +1,23 @@
+# Dependencies
+node_modules
+
+# Next.js
+.next/
+out/
+
+# Development
+.env*
+!.env.example
+
+# Testing
+coverage/
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# OS
+.DS_Store

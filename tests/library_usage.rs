@@ -93,7 +93,6 @@ fn test_library_usage() {
         num_paths: 10_000,  // Smaller number for faster testing
         num_steps: 252,
         seed: Some(42),
-        num_threads: 1,
     };
     
     let mc_price = mc_european.price(Some(config)).expect("Failed to price with Monte Carlo");

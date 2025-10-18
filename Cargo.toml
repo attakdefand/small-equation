@@ -11,6 +11,10 @@ path = "src/lib.rs"
 name = "trillion-dollar-equation"
 path = "src/main.rs"
 
+[[example]]
+name = "database_example"
+path = "examples/database_example.rs"
+
 [dependencies]
 # Mathematical functions and constants
 num = "0.4"
@@ -24,3 +28,16 @@ rand = "0.8"
 rand_distr = "0.4"
 # Parallel processing
 rayon = "1.5"
+# Database support
+rusqlite = { version = "0.28", features = ["bundled"] }
+tokio-postgres = "0.7"
+# ORM support
+diesel = { version = "2.0", features = ["sqlite", "postgres", "r2d2"] }
+# Database migrations
+refinery = { version = "0.8", features = ["rusqlite"] }
+# Date and time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+[dev-dependencies]
+# Testing framework
+criterion = "0.4"
