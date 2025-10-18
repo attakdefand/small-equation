@@ -100,13 +100,18 @@
         </div>
         
         <button id="calculateBtn">Calculate Option Price</button>
+        <button id="greeksBtn">Calculate Greeks</button>
         
         <div id="result" class="result" style="display: none;"></div>
     </div>
 
     <script type="module">
         // Import the WASM module
-        import init, { price_european_call, price_european_put, calculate_greeks, calculate_implied_volatility } from './pkg/trillion_dollar_equation.js';
+        import init, { 
+            price_european_call, 
+            price_european_put, 
+            calculate_greeks 
+        } from './pkg/trillion_dollar_equation_wasm_minimal.js';
         
         // Initialize the WASM module
         async function run() {
@@ -116,6 +121,7 @@
                 
                 // Set up the calculate button event handler
                 document.getElementById('calculateBtn').addEventListener('click', calculateOptionPrice);
+                document.getElementById('greeksBtn').addEventListener('click', calculateGreeks);
             } catch (error) {
                 console.error('Failed to initialize WASM module:', error);
                 showError('Failed to initialize the financial calculator. Please check the console for details.');
@@ -147,22 +153,48 @@
                     price = price_european_put(underlyingPrice, strikePrice, timeToExpiry, riskFreeRate, volatility);
                 }
                 
+                // Display results
+                showResult(`
+                    <h3>Calculation Results</h3>
+                    <p><strong>Option Price:</strong> $${price.toFixed(4)}</p>
+                `);
+            } catch (error) {
+                console.error('Calculation error:', error);
+                showError('An error occurred during calculation. Please check your inputs and try again.');
+            }
+        }
+        
+        function calculateGreeks() {
+            try {
+                // Get input values
+                const underlyingPrice = parseFloat(document.getElementById('underlyingPrice').value);
+                const strikePrice = parseFloat(document.getElementById('strikePrice').value);
+                const timeToExpiry = parseFloat(document.getElementById('timeToExpiry').value);
+                const riskFreeRate = parseFloat(document.getElementById('riskFreeRate').value) / 100;
+                const volatility = parseFloat(document.getElementById('volatility').value) / 100;
+                
+                // Validate inputs
+                if (isNaN(underlyingPrice) || isNaN(strikePrice) || isNaN(timeToExpiry) || 
+                    isNaN(riskFreeRate) || isNaN(volatility)) {
+                    showError('Please enter valid numbers for all fields.');
+                    return;
+                }
+                
                 // Calculate Greeks
                 const greeksJson = calculate_greeks(underlyingPrice, strikePrice, timeToExpiry, riskFreeRate, volatility);
                 const greeks = JSON.parse(greeksJson);
                 
                 // Display results
                 showResult(`
-                    <h3>Calculation Results</h3>
-                    <p><strong>Option Price:</strong> $${price.toFixed(4)}</p>
-                    <p><strong>Greeks:</strong></p>
-                    <ul>
-                        <li>Delta: ${optionType === 'call' ? greeks.call_delta.toFixed(4) : greeks.put_delta.toFixed(4)}</li>
-                        <li>Gamma: ${greeks.gamma.toFixed(4)}</li>
-                        <li>Vega: ${greeks.vega.toFixed(4)}</li>
-                        <li>Theta: ${optionType === 'call' ? greeks.call_theta.toFixed(4) : greeks.put_theta.toFixed(4)}</li>
-                        <li>Rho: ${optionType === 'call' ? greeks.call_rho.toFixed(4) : greeks.put_rho.toFixed(4)}</li>
-                    </ul>
+                    <h3>Greeks Calculation Results</h3>
+                    <p><strong>Call Delta:</strong> ${greeks.call_delta.toFixed(4)}</p>
+                    <p><strong>Put Delta:</strong> ${greeks.put_delta.toFixed(4)}</p>
+                    <p><strong>Gamma:</strong> ${greeks.gamma.toFixed(4)}</p>
+                    <p><strong>Vega:</strong> ${greeks.vega.toFixed(4)}</p>
+                    <p><strong>Call Theta:</strong> ${greeks.call_theta.toFixed(4)}</p>
+                    <p><strong>Put Theta:</strong> ${greeks.put_theta.toFixed(4)}</p>
+                    <p><strong>Call Rho:</strong> ${greeks.call_rho.toFixed(4)}</p>
+                    <p><strong>Put Rho:</strong> ${greeks.put_rho.toFixed(4)}</p>
                 `);
             } catch (error) {
                 console.error('Calculation error:', error);
