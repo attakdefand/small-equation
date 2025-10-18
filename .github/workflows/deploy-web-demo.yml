@@ -43,6 +43,15 @@ jobs:
         run: |
           cd wasm/minimal
           wasm-pack build --target web --out-dir pkg
+          
+      - name: Verify WASM build
+        run: |
+          cd wasm/minimal
+          if [ ! -f "pkg/trillion_dollar_equation_wasm_minimal_bg.wasm" ]; then
+            echo "WASM build failed - missing .wasm file"
+            exit 1
+          fi
+          echo "WASM build successful"
 
       - name: Prepare deployment files
         run: |
@@ -123,6 +132,20 @@ jobs:
           mv deployment/index.html deployment/wasm-demo.html
           mv deployment/README.md deployment/basic-demo-readme.md
           cp web-demo/index.html deployment/basic-demo.html
+          
+      - name: Verify deployment files
+        run: |
+          if [ ! -f "deployment/wasm-demo.html" ] || [ ! -f "deployment/basic-demo.html" ]; then
+            echo "Missing deployment files"
+            ls -la deployment/
+            exit 1
+          fi
+          echo "Deployment files verified"
+
+      - name: List deployment files
+        run: |
+          echo "Deployment files:"
+          find deployment -type f | sort
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
