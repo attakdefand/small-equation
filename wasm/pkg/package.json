@@ -1,0 +1,28 @@
+{
+  "name": "trillion-dollar-equation-wasm",
+  "version": "0.1.0",
+  "description": "WebAssembly implementation of the Trillion Dollar Equation financial models",
+  "main": "trillion_dollar_equation.js",
+  "files": [
+    "trillion_dollar_equation.js",
+    "trillion_dollar_equation_bg.wasm"
+  ],
+  "keywords": [
+    "finance",
+    "options",
+    "black-scholes",
+    "wasm",
+    "webassembly",
+    "rust"
+  ],
+  "author": "Trillion Dollar Equation Project",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/attakdefand/small-equation.git"
+  },
+  "bugs": {
+    "url": "https://github.com/attakdefand/small-equation/issues"
+  },
+  "homepage": "https://github.com/attakdefand/small-equation#readme"
+}

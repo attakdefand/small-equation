@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Trillion Dollar Equation - WASM Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9f7ef;
+            border-radius: 4px;
+            border-left: 4px solid #28a745;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Trillion Dollar Equation - WASM Demo</h1>
+        <p>This demo shows how to use the Rust-based financial models compiled to WebAssembly.</p>
+        
+        <div class="form-group">
+            <label for="underlyingPrice">Underlying Price ($):</label>
+            <input type="number" id="underlyingPrice" value="100" step="0.01">
+        </div>
+        
+        <div class="form-group">
+            <label for="strikePrice">Strike Price ($):</label>
+            <input type="number" id="strikePrice" value="100" step="0.01">
+        </div>
+        
+        <div class="form-group">
+            <label for="timeToExpiry">Time to Expiry (years):</label>
+            <input type="number" id="timeToExpiry" value="1" step="0.01">
+        </div>
+        
+        <div class="form-group">
+            <label for="riskFreeRate">Risk-Free Rate (%):</label>
+            <input type="number" id="riskFreeRate" value="5" step="0.1">
+        </div>
+        
+        <div class="form-group">
+            <label for="volatility">Volatility (%):</label>
+            <input type="number" id="volatility" value="20" step="0.1">
+        </div>
+        
+        <div class="form-group">
+            <label for="optionType">Option Type:</label>
+            <select id="optionType">
+                <option value="call">Call</option>
+                <option value="put">Put</option>
+            </select>
+        </div>
+        
+        <button id="calculateBtn">Calculate Option Price</button>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script type="module">
+        // Import the WASM module
+        import init, { price_european_call, price_european_put, calculate_greeks, calculate_implied_volatility } from './pkg/trillion_dollar_equation.js';
+        
+        // Initialize the WASM module
+        async function run() {
+            try {
+                await init();
+                console.log('WASM module initialized successfully');
+                
+                // Set up the calculate button event handler
+                document.getElementById('calculateBtn').addEventListener('click', calculateOptionPrice);
+            } catch (error) {
+                console.error('Failed to initialize WASM module:', error);
+                showError('Failed to initialize the financial calculator. Please check the console for details.');
+            }
+        }
+        
+        function calculateOptionPrice() {
+            try {
+                // Get input values
+                const underlyingPrice = parseFloat(document.getElementById('underlyingPrice').value);
+                const strikePrice = parseFloat(document.getElementById('strikePrice').value);
+                const timeToExpiry = parseFloat(document.getElementById('timeToExpiry').value);
+                const riskFreeRate = parseFloat(document.getElementById('riskFreeRate').value) / 100;
+                const volatility = parseFloat(document.getElementById('volatility').value) / 100;
+                const optionType = document.getElementById('optionType').value;
+                
+                // Validate inputs
+                if (isNaN(underlyingPrice) || isNaN(strikePrice) || isNaN(timeToExpiry) || 
+                    isNaN(riskFreeRate) || isNaN(volatility)) {
+                    showError('Please enter valid numbers for all fields.');
+                    return;
+                }
+                
+                // Calculate option price based on type
+                let price;
+                if (optionType === 'call') {
+                    price = price_european_call(underlyingPrice, strikePrice, timeToExpiry, riskFreeRate, volatility);
+                } else {
+                    price = price_european_put(underlyingPrice, strikePrice, timeToExpiry, riskFreeRate, volatility);
+                }
+                
+                // Calculate Greeks
+                const greeksJson = calculate_greeks(underlyingPrice, strikePrice, timeToExpiry, riskFreeRate, volatility);
+                const greeks = JSON.parse(greeksJson);
+                
+                // Display results
+                showResult(`
+                    <h3>Calculation Results</h3>
+                    <p><strong>Option Price:</strong> $${price.toFixed(4)}</p>
+                    <p><strong>Greeks:</strong></p>
+                    <ul>
+                        <li>Delta: ${optionType === 'call' ? greeks.call_delta.toFixed(4) : greeks.put_delta.toFixed(4)}</li>
+                        <li>Gamma: ${greeks.gamma.toFixed(4)}</li>
+                        <li>Vega: ${greeks.vega.toFixed(4)}</li>
+                        <li>Theta: ${optionType === 'call' ? greeks.call_theta.toFixed(4) : greeks.put_theta.toFixed(4)}</li>
+                        <li>Rho: ${optionType === 'call' ? greeks.call_rho.toFixed(4) : greeks.put_rho.toFixed(4)}</li>
+                    </ul>
+                `);
+            } catch (error) {
+                console.error('Calculation error:', error);
+                showError('An error occurred during calculation. Please check your inputs and try again.');
+            }
+        }
+        
+        function showResult(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = message;
+            resultDiv.className = 'result';
+            resultDiv.style.display = 'block';
+        }
+        
+        function showError(message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<strong>Error:</strong> ${message}`;
+            resultDiv.className = 'result error';
+            resultDiv.style.display = 'block';
+        }
+        
+        // Run the initialization
+        run();
+    </script>
+</body>
+</html>

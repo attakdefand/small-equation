@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Trillion Dollar Equation
 
 A comprehensive Rust library for financial options pricing with implementations of the Black-Scholes model and its variants, along with advanced numerical methods for option valuation.
@@ -25,6 +24,11 @@ A comprehensive Rust library for financial options pricing with implementations 
 - **Data Migration Framework**: Version-controlled schema management
 - **ORM Support**: Type-safe database interactions
 
+### WebAssembly Support
+- **Browser-Based Calculations**: Run financial models directly in the browser
+- **High Performance**: Near-native performance with WebAssembly
+- **JavaScript Bindings**: Easy integration with web applications
+
 ## Project Structure
 
 ```
@@ -33,12 +37,19 @@ trillion-dollar-equation/
 │   ├── models/          # Pricing models implementations
 │   ├── utils/           # Utility functions
 │   ├── cli/             # Command-line interface
+│   ├── wasm.rs          # WebAssembly bindings
 │   ├── lib.rs           # Library entry point
 │   └── main.rs          # CLI application
 ├── tests/               # Comprehensive test suite
 ├── examples/            # Example applications
 ├── web/                 # Web frontend (Next.js)
 ├── api/                 # Web API (Actix-web)
+├── wasm/                # WebAssembly implementation
+│   ├── pkg/             # Built WASM package (generated)
+│   ├── index.html       # Demo HTML page
+│   ├── build.sh         # Unix build script
+│   ├── build.ps1        # Windows build script
+│   └── README.md        # WASM documentation
 ├── migrations/          # Database migration scripts
 ├── NEXT-IMPLEMENTATION.md    # Implementation roadmap
 ├── SYSTEM-DESIGN-FOR-EQUATION.MD  # System architecture
@@ -73,6 +84,38 @@ cargo test
 ```bash
 cargo run
 ```
+
+## WebAssembly Support
+
+The project includes WebAssembly (WASM) support for running financial calculations directly in web browsers:
+
+### Building WASM Package
+
+```bash
+# Install wasm-pack if not already installed
+cargo install wasm-pack
+
+# Build the WASM package
+wasm-pack build --target web --out-dir wasm/pkg
+```
+
+### Using WASM in Web Applications
+
+```javascript
+import init, { 
+    price_european_call, 
+    calculate_greeks 
+} from './pkg/trillion_dollar_equation.js';
+
+// Initialize the WASM module
+await init();
+
+// Calculate an option price
+const price = price_european_call(100, 100, 1, 0.05, 0.2);
+console.log(`Option price: $${price.toFixed(4)}`);
+```
+
+See [wasm/README.md](wasm/README.md) for detailed instructions on using the WASM implementation.
 
 ## Database Support
 
@@ -174,6 +217,7 @@ Example request:
 - Binomial Option Pricing Model
 - Monte Carlo Simulation
 - Database Integration
+- WebAssembly Support
 
 📅 **Planned Features**:
 - Advanced Greeks Calculations
@@ -235,6 +279,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - Based on the Black-Scholes equation and its various extensions
 - Inspired by financial engineering research and practice
-=======
-# small-equation
->>>>>>> b03b00542b5daaab505ec5f6ac651f1d7d70cf05
