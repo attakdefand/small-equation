@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Trillion Dollar Equation
 
 A comprehensive Rust library for financial options pricing with implementations of the Black-Scholes model and its variants, along with advanced numerical methods for option valuation.
@@ -234,3 +235,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - Based on the Black-Scholes equation and its various extensions
 - Inspired by financial engineering research and practice
+=======
+# small-equation
+>>>>>>> b03b00542b5daaab505ec5f6ac651f1d7d70cf05
