@@ -12,7 +12,7 @@ fn benchmark_european_call_option_pricing(c: &mut Criterion) {
                 black_box(1.0),    // Time to expiry (1 year)
                 black_box(0.05),   // Risk-free rate (5%)
                 black_box(0.2),    // Volatility (20%)
-            ).unwrap();
+            );
             
             black_box(option.price())
         })
