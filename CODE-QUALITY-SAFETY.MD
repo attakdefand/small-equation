@@ -79,6 +79,20 @@ This workflow provides automated code review feedback:
 - **Clippy Review**: Automated clippy suggestions in PR comments
 - **Formatting Review**: Automated formatting suggestions in PR comments
 
+### 6. Deploy Web Demo (`deploy-web-demo.yml`)
+
+This workflow builds and deploys the web demos to GitHub Pages:
+
+#### Build Process
+- **WASM Compilation**: Compiles Rust code to WebAssembly using wasm-pack
+- **File Preparation**: Organizes deployment files for GitHub Pages
+- **Artifact Upload**: Uploads built files for deployment
+
+#### Deployment Process
+- **GitHub Pages Deployment**: Deploys to GitHub Pages environment
+- **Concurrent Deployment Protection**: Prevents multiple simultaneous deployments
+- **Manual Trigger**: Allows manual deployment from GitHub Actions interface
+
 ## Branch Strategy Safety Measures
 
 ### Protected Branches
@@ -188,5 +202,15 @@ This workflow provides automated code review feedback:
 ### Testing Tools
 - **Tarpaulin**: Code coverage analysis
 - **Codecov**: Coverage reporting and monitoring
+
+## Deployment Process
+
+The deployment process automatically builds and deploys web demos to GitHub Pages whenever changes are pushed to the main branch:
+
+1. **WASM Build**: Compiles the Rust financial models to WebAssembly
+2. **File Organization**: Prepares all necessary files for deployment
+3. **GitHub Pages Deployment**: Automatically deploys to the configured GitHub Pages environment
+
+This ensures that the latest version of the web demos is always available at the GitHub Pages URL.
 
 This comprehensive approach to code quality and safety ensures that the Trillion Dollar Equation project maintains high standards of reliability, security, and maintainability.

@@ -1,0 +1,142 @@
+name: Deploy Web Demo to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  # Build job
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Add WASM target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Build WASM package
+        run: |
+          cd wasm/minimal
+          wasm-pack build --target web --out-dir pkg
+
+      - name: Prepare deployment files
+        run: |
+          # Create deployment directory
+          mkdir -p deployment
+          
+          # Copy WASM demo files
+          cp wasm/index.html deployment/
+          cp -r wasm/minimal/pkg deployment/pkg
+          
+          # Copy basic web demo files
+          cp -r web-demo/* deployment/
+          
+          # Create a simple index.html that links to both demos
+          cat > deployment/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <meta charset="utf-8">
+              <title>Trillion Dollar Equation - Financial Models</title>
+              <style>
+                  body {
+                      font-family: Arial, sans-serif;
+                      max-width: 800px;
+                      margin: 0 auto;
+                      padding: 20px;
+                      background-color: #f5f5f5;
+                  }
+                  .container {
+                      background-color: white;
+                      padding: 20px;
+                      border-radius: 8px;
+                      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                      text-align: center;
+                  }
+                  h1 {
+                      color: #333;
+                  }
+                  .demo-link {
+                      display: block;
+                      margin: 20px 0;
+                      padding: 15px;
+                      background-color: #007bff;
+                      color: white;
+                      text-decoration: none;
+                      border-radius: 4px;
+                      font-size: 18px;
+                  }
+                  .demo-link:hover {
+                      background-color: #0056b3;
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>Trillion Dollar Equation - Financial Models</h1>
+                  <p>Professional Financial Options Pricing Calculator</p>
+                  
+                  <a href="wasm-demo.html" class="demo-link">WASM-Based Demo (Interactive Calculator)</a>
+                  <a href="basic-demo.html" class="demo-link">Basic Demo (Static Interface)</a>
+                  
+                  <h2>About This Project</h2>
+                  <p>This project implements various financial models in Rust, including:</p>
+                  <ul style="text-align: left;">
+                      <li>Black-Scholes Model for European Options</li>
+                      <li>Binomial Tree Model for American Options</li>
+                      <li>Monte Carlo Simulation for Path-Dependent Options</li>
+                      <li>Implied Volatility Calculations</li>
+                      <li>Greeks Calculations</li>
+                  </ul>
+                  <p>The WASM-based demo allows you to run these calculations directly in your browser using WebAssembly.</p>
+              </div>
+          </body>
+          </html>
+          EOF
+          
+          # Rename the demo files for clarity
+          mv deployment/index.html deployment/wasm-demo.html
+          mv deployment/README.md deployment/basic-demo-readme.md
+          cp web-demo/index.html deployment/basic-demo.html
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: deployment
+
+  # Deployment job
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1

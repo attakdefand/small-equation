@@ -161,5 +161,6 @@ The repository uses several GitHub Actions workflows to ensure code quality and 
 3. **Release** (`release.yml`): Automates the release process with validation steps
 4. **Continuous Integration** (`continuous-integration.yml`): Runs basic checks on all branches
 5. **Code Review** (`code-review.yml`): Automated code review and analysis
+6. **Deploy Web Demo** (`deploy-web-demo.yml`): Builds and deploys the web demos to GitHub Pages
 
 All workflows are designed to fail fast if any quality or safety checks fail, preventing problematic code from being merged.
